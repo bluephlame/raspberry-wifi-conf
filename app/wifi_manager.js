@@ -17,7 +17,7 @@ function write_template_to_file(template_path, file_name, context, callback) {
     async.waterfall([
 
         function read_template_file(next_step) {
-	    console.log("writing to template path "+ template_path);
+        console.log("writing to template path "+ template_path);
             fs.readFile(template_path, {encoding: "utf8"}, next_step);
         },
 
@@ -49,6 +49,7 @@ module.exports = function() {
         "hw_addr":         /HWaddr\s([^\s]+)/,
         "inet_addr":       /inet addr:([^\s]+)/,
     },  iwconfig_fields = {
+        "mode":            /Mode:([^\ ]+)/,
         "ap_addr":         /Access Point:\s([^\s]+)/,
         "ap_ssid":         /ESSID:\"([^\"]+)\"/,
         "unassociated":    /(unassociated)\s+Nick/,
@@ -59,6 +60,7 @@ module.exports = function() {
     // Get generic info on an interface
     var _get_wifi_info = function(callback) {
         var output = {
+            mode:         "<unknown>", 
             hw_addr:      "<unknown>",
             inet_addr:    "<unknown>",
             ap_addr:      "<unknown_ap>",
@@ -69,13 +71,19 @@ module.exports = function() {
         // Inner function which runs a given command and sets a bunch
         // of fields
         function run_command_and_set_fields(cmd, fields, callback) {
+
+            console.log("Running command "+cmd);
             exec(cmd, function(error, stdout, stderr) {
+                console.log("stdout: "+stdout.toString());
                 if (error) return callback(error);
                 for (var key in fields) {
                     re = stdout.match(fields[key]);
                     if (re && re.length > 1) {
                         output[key] = re[1];
                     }
+                }
+                for(var key in output){
+                    console.log("output for key["+key+"] value : "+output[key]);
                 }
                 callback(null);
             });
@@ -116,9 +124,12 @@ module.exports = function() {
     _is_wifi_enabled_sync = function(info) {
         // If we are not an AP, and we have a valid
         // inet_addr - wifi is enabled!
-        if (null        == _is_ap_enabled_sync(info) &&
+        ap_enabled = _is_ap_enabled_sync(info);
+        console.log("inet addr :"+info["inet_addr"]+" ap_enabled :" +ap_enabled +" mode: "+info["mode"])
+
+        if (null        == ap_enabled &&
             "<unknown>" != info["inet_addr"]         &&
-            "<unknown>" == info["unassociated"] ) {
+            "<unknown>" == info["unassociated"]  && info["mode"].toLowerCase() != "master") {
             return info["inet_addr"];
         }
         return null;
@@ -136,9 +147,11 @@ module.exports = function() {
         // If the hw_addr matches the ap_addr
         // and the ap_ssid matches "rpi-config-ap"
         // then we are in AP mode
+
+        console.log("Ap enabled? "+info["hw_addr"].toLowerCase()+" == "+info["ap_addr"].toLowerCase());
+        console.log("Ap ssid " + info["ap_ssid"]  +" == "+ config.access_point.ssid);
         var is_ap  =
-            info["hw_addr"].toLowerCase() == info["ap_addr"].toLowerCase() &&
-            info["ap_ssid"] == config.access_point.ssid;
+            info["mode"].toLowerCase() == "master";
         return (is_ap) ? info["hw_addr"].toLowerCase() : null;
     },
 
@@ -249,10 +262,10 @@ module.exports = function() {
         _is_wifi_enabled(function(error, result_ip) {
             if (error) return callback(error);
 
-//            if (result_ip) {
-//                console.log("\nWifi connection is enabled with IP: " + result_ip);
-//                return callback(null);
-//            }
+           if (result_ip) {
+               console.log("\nWifi connection is enabled with IP: " + result_ip);
+               return callback(null);
+           }
 
             async.series([
 
