@@ -34,7 +34,7 @@ async.series([
     // 2. Check if wifi is enabled / connected
     function test_is_wifi_enabled(next_step) {
         wifi_manager.is_wifi_enabled(function(error, result_ip) {
-            if (result_ip) {
+            if (result_ip && result_ip != config.access_point.ip_addr) {
                 console.log("\nWifi is enabled, and IP " + result_ip + " assigned");
                 process.exit(0);
             } else {

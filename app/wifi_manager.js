@@ -2,7 +2,8 @@ var _       = require("underscore")._,
     async   = require("async"),
     fs      = require("fs"),
     exec    = require("child_process").exec,
-    config  = require("../config.json");
+    config  = require("../config.json"),
+    utlil   = require("util");
 
 // Better template format
 _.templateSettings = {
@@ -16,6 +17,7 @@ function write_template_to_file(template_path, file_name, context, callback) {
     async.waterfall([
 
         function read_template_file(next_step) {
+	    console.log("writing to template path "+ template_path);
             fs.readFile(template_path, {encoding: "utf8"}, next_step);
         },
 
@@ -247,10 +249,10 @@ module.exports = function() {
         _is_wifi_enabled(function(error, result_ip) {
             if (error) return callback(error);
 
-            if (result_ip) {
-                console.log("\nWifi connection is enabled with IP: " + result_ip);
-                return callback(null);
-            }
+//            if (result_ip) {
+//                console.log("\nWifi connection is enabled with IP: " + result_ip);
+//                return callback(null);
+//            }
 
             async.series([
 

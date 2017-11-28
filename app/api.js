@@ -33,6 +33,9 @@ module.exports = function(wifi_manager, callback) {
 
     // Setup static routes to public assets
     app.use(express.static(path.join(__dirname, "public")));
+console.log("setting external");    
+console.log(path.join(__dirname, "/../node_modules"));
+app.use('/external',express.static(path.join(__dirname, "/../node_modules")));
     app.use(bodyParser.json());
 
     // Setup HTTP routes for rendering views
